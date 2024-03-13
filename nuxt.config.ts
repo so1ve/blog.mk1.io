@@ -1,5 +1,5 @@
 export default defineNuxtConfig({
-	modules: ["@nuxt/content"],
+	modules: ["@nuxt/content", "@unocss/nuxt", "@vueuse/nuxt"],
 	srcDir: "src/",
 	devtools: { enabled: true },
 	typescript: {
