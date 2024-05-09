@@ -13,7 +13,7 @@
 		"@nuxt/content": "^2.11.0",
 		"@so1ve/eslint-config": "^2.0.0",
 		"@so1ve/prettier-config": "^2.0.0",
-		"@unocss/nuxt": "^0.58.5",
+		"@unocss/nuxt": "^0.60.0",
 		"@vueuse/nuxt": "^10.9.0",
 		"eslint": "^8.57.0",
 		"nuxt": "^3.10.0",
