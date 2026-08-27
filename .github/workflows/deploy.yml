@@ -24,11 +24,11 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Install Rust
-        uses: dtolnay/rust-toolchain@nightly
+      - name: Install cargo-binstall
+        uses: cargo-bins/cargo-binstall@v1.22.0
 
       - name: Install Inkcairn
-        run: cargo install inkcairn
+        run: cargo binstall inkcairn --no-confirm
 
       - name: Build site
         run: inkcairn build .
