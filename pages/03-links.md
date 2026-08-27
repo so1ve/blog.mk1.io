@@ -31,7 +31,6 @@
   url: https://modenc.top
   avatar: https://modenc.top/avatar.jpg
 
-  url: https:/  /sky.axono.org
 - name: SkyWalker
   description: listening snow
   avatar: https://avatars.githubusercontent.com/u/211116259?v=4
