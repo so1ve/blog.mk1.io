@@ -4,6 +4,8 @@ published: 2025-11-12
 
 # 把博客用 Nuxt Content 重写及踩坑记录
 
+## 正文
+
 这次把博客用 [Nuxt Content](https://content.nuxtjs.org/) 重写了一遍，记录一下整个重写过程。当然，过程中也踩了不少坑，一并记录一下以帮助大家少走弯路。
 
 ## 实现过程

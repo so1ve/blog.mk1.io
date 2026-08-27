@@ -4,6 +4,8 @@ published: 2024-01-19
 
 # Vue Language Tools 深度解析 (1)：Vue 编辑器插件发展历程及基本工作原理
 
+## 正文
+
 作为一门独立的模板语言，编写 Vue SFC 时必不可少的就是像 TSX 一样的自动补全、错误提示等功能。而这些功能的实现离不开编辑器插件与语言服务器。自 Vue 诞生以来，有三个项目为 Vue 提供了语言功能 Vetur，VueDX 和本系列的主角 Vue Language Tools。本文将从历史的角度出发，介绍这三个项目的发展历程，以及 Vue Language Tools 的基本工作原理。
 
 ## Vetur
