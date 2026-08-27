@@ -42,49 +42,41 @@ published: 2026-01-01
 
 在高考结束后自然而然地迎来了换设备的时机。最终选择了以下设备：
 
-### OnePlus 13
+```devices
+- name: OnePlus 13
+  description: 冲着性能和 BL 无锁去的
+  image: https://img.mk1.io/img/20260101014023846.png
+  specs:
+    - 24GB RAM
+    - 1TB 存储
 
-冲着性能和 BL 无锁去的
+- name: OnePlus Pad Pro
+  description: 主要是为了和手机联动 + 手写笔，以及均衡价格考虑
+  image: https://img.mk1.io/img/20260101014103604.png
+  specs:
+    - 8GB RAM
+    - 256GB 存储
 
-![OnePlus 13](https://img.mk1.io/img/20260101014023846.png)
+- name: 机械革命 蛟龙
+  description: 具体型号忘了，应该够用很久
+  image: https://img.mk1.io/img/20260101014335414.png
+  specs:
+    - AMD Ryzen 9 9955HX
+    - 32GB RAM
+    - 1TB SSD
+    - RTX 5070Ti
 
-- 24GB RAM
-- 1TB 存储
+- name: ATK 烈空 F1v2 大师版
+  description: 主要是花兽自然损坏了，另外发现自己不适合用大鼠标，最终在国产鼠标里选了个手感最好的
+  image: https://img.mk1.io/img/20260101014508555.png
+  specs:
+    - 16000 DPI
+    - 39g
 
-### OnePlus Pad Pro
-
-主要是为了和手机联动 + 手写笔，以及均衡价格考虑
-
-![OnePlus Pad Pro](https://img.mk1.io/img/20260101014103604.png)
-
-- 8GB RAM
-- 256GB 存储
-
-### 机械革命 蛟龙
-
-具体型号忘了，应该够用很久
-
-![机械革命 蛟龙](https://img.mk1.io/img/20260101014335414.png)
-
-- AMD Ryzen 9 9955HX
-- 32GB RAM
-- 1TB SSD
-- RTX 5070Ti
-
-### ATK 烈空 F1v2 大师版
-
-主要是花兽自然损坏了，另外发现自己不适合用大鼠标，最终在国产鼠标里选了个手感最好的
-
-![ATK 烈空 F1v2 大师版](https://img.mk1.io/img/20260101014508555.png)
-
-- 16000 DPI
-- 39g
-
-### 迈从 Mix 87
-
-价格实惠，而且支持 SOCD
-
-![迈从 Mix 87](https://img.mk1.io/img/20260101014604889.png)
+- name: 迈从 Mix 87
+  description: 价格实惠，而且支持 SOCD
+  image: https://img.mk1.io/img/20260101014604889.png
+```
 
 
 不过也苦于游戏本太厚重 + 续航差，一直在思考要不要拥抱🍎。想了想短期内不太可能，毕竟没有这么多钱。
