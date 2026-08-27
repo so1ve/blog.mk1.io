@@ -1,8 +1,11 @@
-{ pkgs, ... }:
+{ inputs, pkgs, ... }:
 
 {
-  packages = with pkgs; [
-    vscode-langservers-extracted
-    yaml-language-server
+  cachix.pull = [ "so1ve" ];
+
+  packages = [
+    inputs.inkcairn.packages.${pkgs.stdenv.system}.inkcairn
+    pkgs.vscode-langservers-extracted
+    pkgs.yaml-language-server
   ];
 }

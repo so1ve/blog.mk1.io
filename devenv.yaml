@@ -1,3 +1,5 @@
 inputs:
+  inkcairn:
+    url: github:so1ve/inkcairn
   nixpkgs:
     url: github:cachix/devenv-nixpkgs/rolling
