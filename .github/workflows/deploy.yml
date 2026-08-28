@@ -4,6 +4,16 @@ on:
   push:
     branches:
       - main
+  discussion:
+    types:
+      - created
+      - edited
+      - deleted
+  discussion_comment:
+    types:
+      - created
+      - edited
+      - deleted
 
 concurrency:
   group: cloudflare-pages-production
@@ -12,6 +22,7 @@ concurrency:
 permissions:
   contents: read
   deployments: write
+  discussions: read
 
 jobs:
   deploy:
@@ -32,6 +43,8 @@ jobs:
 
       - name: Build site
         run: inkcairn build .
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
 
       - name: Deploy
         id: deploy
