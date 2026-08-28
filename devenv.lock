@@ -22,11 +22,11 @@
         "nixpkgs": "nixpkgs"
       },
       "locked": {
-        "lastModified": 1787846728,
-        "narHash": "sha256-bJnMFCC44dp4OAF+MmbiJ40CDPBuNkKX32bIWgQmHLc=",
+        "lastModified": 1787902186,
+        "narHash": "sha256-BU2VGwcEjIPZcPxPsblgNvxYiLcKnqsOn7/cmGJcTlE=",
         "owner": "so1ve",
         "repo": "inkcairn",
-        "rev": "5af97b250cef8f5f80e1b175afa1d174e2d1785a",
+        "rev": "015abe17f4832ba87a4cc753468bb718c3b4bc0c",
         "type": "github"
       },
       "original": {
