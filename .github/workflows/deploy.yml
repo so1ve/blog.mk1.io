@@ -35,14 +35,16 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Install cargo-binstall
-        uses: cargo-bins/cargo-binstall@v1.22.0
-
-      - name: Install Inkcairn
-        run: cargo binstall inkcairn --no-confirm
+      - name: Download Inkcairn
+        run: |
+          curl --fail --location --silent --show-error \
+            --output "$RUNNER_TEMP/inkcairn" \
+            https://github.com/so1ve/inkcairn/releases/latest/download/inkcairn-x86_64-unknown-linux-gnu
+          chmod +x "$RUNNER_TEMP/inkcairn"
 
       - name: Build site
-        run: inkcairn build .
+        run: |
+          "$RUNNER_TEMP/inkcairn" build .
         env:
           GITHUB_TOKEN: ${{ github.token }}
 
