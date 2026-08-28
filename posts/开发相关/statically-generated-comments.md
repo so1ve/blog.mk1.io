@@ -12,7 +12,9 @@
 
 因此，页面默认展示的是构建时生成的评论快照，不需要加载 Giscus 的客户端脚本；只有读者点击 `Use Giscus` 后，页面才会加载 Giscus iframe，用于登录、发送和编辑评论。可以简单地说：静态快照负责读取评论，Giscus 负责与评论区实时交互。
 
-其实，这个功能是通过 GitHub Discussions 的 API 实现的。我的博客使用了 GitHub Actions 来自动构建并推送到 Cloudflare Pages 上，因此，只需要在 GitHub Actions 的触发条件加入如下代码：
+## 自动触发构建
+
+我的博客使用了 GitHub Actions 来自动构建并推送到 Cloudflare Pages 上，因此，只需要在 GitHub Actions 的触发条件加入如下代码：
 
 ```yaml
 on:
@@ -25,6 +27,8 @@ on:
 *[具体 Actions 可参考这里](https://github.com/so1ve/blog.mk1.io/blob/main/.github/workflows/deploy.yml)*
 
 即可，这样，当有新的评论发布、编辑或删除时，GitHub Actions 就会触发博客的重新构建，从而生成最新的静态评论区。构建速度越快，评论区的更新就越及时。非常幸运，由于 Inkcairn 足够简单，构建博客本身的速度稳定在一秒内，几乎可以忽略不计。
+
+当然，如果你不使用 Actions，或者是通过服务器或是别的 CI/CD 工具来构建博客，也可以用 Webhook 的方式来触发博客的重新构建。
 
 完整的数据流如下：
 
