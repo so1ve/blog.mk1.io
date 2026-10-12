@@ -17,9 +17,10 @@
   description: Take your heart
   url: https://jokerm.com
 
-- name: Kevin Deng
+- name: 智子
+  description: 探索存在的意义
   url: https://sxzz.dev
-  avatar: https://sxzz.dev/avatar.jpg
+  avatar: https://sxzz.dev/avatar-zh.avif
 
 - name: Lete乐特
   description: 人生只有一次，大胆的生活！！
