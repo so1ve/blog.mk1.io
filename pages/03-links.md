@@ -3,19 +3,10 @@
 友链顺序按名称排列。
 
 ```friends
-- name: AomanHao
-  description: 热爱图像处理，优化彩色世界
-  url: https://www.aomanhao.top
-  avatar: https://img.mk1.io/img/avatars/8ffb3667ee8b564d33447dee5127b708.png
-
 - name: CyanFalse's Weblog
   description: I'm CyanFalse, New to Here.
   url: https://blog.eurekac.cn
   avatar: https://img.mk1.io/img/avatars/1803c66b8e173833b71c60d5cec06176.png
-
-- name: JokerM's Palace
-  description: Take your heart
-  url: https://jokerm.com
 
 - name: 智子
   description: 探索存在的意义
@@ -56,15 +47,6 @@
   url: https://www.imaegoo.com
   avatar: https://img.mk1.io/img/avatars/440bb8b742267449c82d86cfcb9ba4a2.png
 
-- name: jcjyxjs
-  description: 永远年轻，永远热泪盈眶。
-  url: https://elstec.cn
-  avatar: https://img.mk1.io/img/avatars/2b06e3d7dfa21a4331264e374ec74347.png
-
-- name: yiyun's Blog
-  description: The stupid one is me
-  url: https://moeci.com
-
 - name: 冬烟 の 博客
   description: DYM_453
   url: https://blog.520453.xyz
@@ -79,16 +61,6 @@
   description: 用心享受生活
   url: https://blog.awaae001.top
   avatar: https://img.mk1.io/img/avatars/1ee0465019efc8c0ef44e63e6c599a21.jpg
-
-- name: 宇宙湾
-  description: 主要是大数据和人工智能的原创文章
-  url: https://yuzhouwan.com
-  avatar: https://img.mk1.io/img/avatars/d1d933b6499f751c9f4db6d7fe9e574f.png
-
-- name: 小伙纸の网站
-  description: 永远相信美好的事情即将发生
-  url: https://kndxhz.cn
-  avatar: https://img.mk1.io/img/avatars/7f919bcd8b56dab78ee17410458eb01d.png
 
 - name: 微光档案
   description: 故事就是只为你一个人而存在的世界
@@ -114,11 +86,6 @@
   description: 如光似幻，如影随形
   url: https://mzwing.eu.org
   avatar: https://img.mk1.io/img/avatars/f224be8da5186089988699b1bec34511.png
-
-- name: 洛屿的小站
-  description: 嗨，靓仔，今天也要有个好心情哦！
-  url: https://www.drluo.top/
-  avatar: https://www.drluo.top/img/avatar.webp
 
 - name: 米露小窝
   description: 放弃个性,就和死了没什么区别
