@@ -47,11 +47,6 @@
   url: https://www.imaegoo.com
   avatar: https://img.mk1.io/img/avatars/440bb8b742267449c82d86cfcb9ba4a2.png
 
-- name: 冬烟 の 博客
-  description: DYM_453
-  url: https://blog.520453.xyz
-  avatar: https://github.com/Dongyanmio.png
-
 - name: 可愛い松
   description: Fight together!!
   url: https://blog.wibus.ren
