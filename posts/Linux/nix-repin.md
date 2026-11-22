@@ -4,37 +4,37 @@ published: 2026-11-19
 
 # nix-repin：用 TypeScript 给 Nix 包写自动更新
 
-前段时间把自己的 NUR 仓库 [so1ve/nur-packages](https://github.com/so1ve/nur-packages) 整理了一遍。随着里面塞的包越来越多，原来的自动更新方案用着实在难受，于是干脆自己造了个新轮子：[nix-repin](https://github.com/so1ve/nix-repin)。
+前段时间把自己的 NUR 仓库 [so1ve/nur-packages](https://github.com/so1ve/nur-packages) 整理了一遍。里面的包越塞越多，原来的自动更新方案用着实在难受，干脆自己造了个新轮子：[nix-repin](https://github.com/so1ve/nix-repin)。
 
-它的定位很简单，你给每个包写一个 `source.ts`，nix-repin 自动生成 `source.nix` 和对应的 lock 文件供 `default.nix` 调用。
+用法很简单：给每个包写一个 `source.ts`，运行 `nix-repin` 就会自动生成 `source.nix` 和对应的 lock 文件，供 `default.nix` 直接调用。
 
 ## 为什么打 Nix 包离不开自动更新
 
-打过 Nix 包的话应该都体会过被 hash 支配的痛苦。为了保证构建可复现，Nix 要求所有外部输入都得提前写死校验哈希：不光是源码压缩包、预编译二进制或者 Git commit 的 `hash`，只要项目用到了 npm、pnpm、Bun、Go、Rust、Flutter 这些生态，连依赖锁对应的哈希（比如 `npmDepsHash`、`vendorHash`、`Cargo.lock` 里的 Git 依赖哈希）也必须算好填进去。
+打过 Nix 包的话应该都体会过被 hash 支配的痛苦。为了保证构建可复现，Nix 要求所有外部输入都得提前写死校验哈希：不光是源码压缩包、预编译二进制或者 Git commit 的 `hash`，只要项目用到了 npm、pnpm、Bun、Go、Rust、Flutter，连依赖锁的哈希（比如 `npmDepsHash`、`vendorHash`、`Cargo.lock` 里的 Git 依赖哈希）也得算好填进去。
 
-如果只维护一两个包，上游发新版时手动改下 `version`，把旧哈希换成 `lib.fakeHash`，跑一遍 `nix build` 等它报错再把 `got: sha256-...` 抄回去，其实也还行。但我的 `nur-packages` 里现在攒了三十多个包，里面既有 `xxx-git` / `xxx-unstable` 这种直接基于 Git 源码，我显然不可能手动维护的东西，也有要同时管 `x86_64-linux` 和 `aarch64-linux` 两个架构的二进制包，还有前后端混写的项目。要是每次上游更新都靠人肉改版本、跑构建、贴 hash，那基本不用干别的事了。
+只维护一两个包的时候，上游发新版了手动改下 `version`，把旧哈希换成 `lib.fakeHash`，跑一遍 `nix build` 等报错再把 `got: sha256-...` 抄回去，其实也还能忍。但我的 `nur-packages` 里现在有三十多个包，里面既有 `xxx-git` / `xxx-unstable` 这种跟着 Git 分支走的包，也有要同时管 `x86_64-linux` 和 `aarch64-linux` 两个架构的二进制包，还有前后端混在一起的项目。要是每次上游更新都靠手动改版本、跑构建、贴 hash，那基本不用干别的事了。
 
 ## What about nvfetcher?
 
-社区里现成的更新工具其实不少，比如 nixpkgs 里常用的 `nix-update`，以及个人仓库里很流行的 `nvfetcher`。我的 `nur-packages` 最开始用的就是 `nvfetcher`，但包多了之后遇到了几个挺头疼的问题。~~Also enough 啊，老师！~~
+社区里现成的更新工具其实不少，比如 nixpkgs 里常用的 `nix-update`，还有个人仓库里很流行的 `nvfetcher`。我的 `nur-packages` 最开始用的就是 `nvfetcher`，但包多了之后遇到了几个挺头疼的问题。~~Also enough 啊，老师！~~
 
-首先是文件组织方式。`nvfetcher` 需要把所有包的配置全写进根目录的 `nvfetcher.toml`，生成的产物也统一堆在 `_sources/generated.nix` 和 `_sources/generated.json` 里。包少的时候还能接受，包一多整个配置文件就变得很长；而且以前给 `ab-download-manager` 这种分架构发二进制的包写配置时，还得在 `nvfetcher.toml` 里硬拆成 `ab-download-manager-x86_64-linux` 和 `ab-download-manager-aarch64-linux` 两项，很不直观。我更希望每个包自己管自己，配置和生成出来的文件都待在 `pkgs/<name>/` 目录下
+一个是文件组织方式。`nvfetcher` 要把所有包的配置全写进根目录的 `nvfetcher.toml`，生成的产物也统一堆在 `_sources/generated.nix` 和 `_sources/generated.json` 里。包一多整个配置文件就拉得很长；而且以前给 `ab-download-manager` 这种分架构发二进制的包写配置时，还得在 `nvfetcher.toml` 里硬拆成 `ab-download-manager-x86_64-linux` 和 `ab-download-manager-aarch64-linux` 两项，很不直观。我更希望每个包自己管自己，配置和生成出来的文件都放在各自的 `pkgs/<name>/` 目录下。
 
-更要命的是遇到不按套路出牌的上游。如果软件老老实实发 GitHub Release、打 Git tag 或者在 AUR 上有现成包，用 TOML 配几行确实舒服；可一旦碰上国内闭源软件或者自己搞一套发布接口的项目，比如要先请求某个 JSON / YAML 接口拿版本号、要跟着 `GET` 跳转拿真实下载地址、或者一个包要顺带拉取外挂补丁仓库，TOML 的表达能力就不够用了。这时候往往只能退回去写 `update.sh` 用 bash + `curl` + `jq` 硬搓，或者往配置里塞自定义 shell 命令，写起来难受不说，还没法复用。至于 `nix-update`，它的思路是直接去改写手写 `.nix` 文件里的 `version` 和 `hash` 字符串，碰上这种特殊上游或者需要生成额外文件的包同样没辙。
+再就是遇到不按套路出牌的上游。如果软件老老实实发 GitHub Release、打 Git tag 或者在 AUR 上有现成包，用 TOML 配几行确实舒服；可一旦碰上国内闭源软件或者自己搞一套发布接口的项目，比如要先请求某个 JSON / YAML 接口拿版本号、要跟着 `GET` 跳转拿真实下载地址、或者一个包要顺带拉取外挂补丁仓库，TOML 就写不出来了。这时候往往只能退回去写 `update.sh` 用 bash + `curl` + `jq` 硬搓，或者往 TOML 里塞 shell 命令，写起来难受不说，还没法复用。至于 `nix-update`，它是直接去改写 `.nix` 文件里的 `version` 和 `hash` 字符串，碰上这种特殊上游或者要生成额外文件的包同样没辙。
 
-还有一个痛点是各语言生态的依赖 hash。光把新源码拉下来通常不够，一旦上游改了 `pnpm-lock.yaml`、`bun.lock` 或者 `go.sum`，包照样无法编译；`nvfetcher` 原生能处理 `Cargo.lock`，但碰上 Go、pnpm、Bun、Yarn 这些生态还是得自己想办法
+另外就是各语言生态的依赖 hash。光把新源码拉下来还不够，上游只要改了 `pnpm-lock.yaml`、`bun.lock` 或者 `go.sum`，依赖哈希没跟着变，包照样编不过。`nvfetcher` 原生能处理 `Cargo.lock`，但碰上 Go、pnpm、Bun、Yarn 还是得自己想办法。
 
-想来想去，干脆直接拿 TypeScript 来做这件事算了：
+想来想去，干脆直接用 TypeScript 来写更新配置：
 
 1. 常规的 GitHub Release、Git 分支、npm、AUR、OCI 镜像、VS Code 插件直接调内置函数，几行代码就能写完，跟写配置文件差不多；
 2. 遇到奇葩上游时不用切去写 bash，直接在同一个 `source.ts` 里写个 `async` 函数，`fetch`、正则、`JSON.parse` 随便用，还有完整的类型提示；
-3. 更新器不去正则替换手写的 `default.nix`，所有变动的数据都输出到旁边的 `source.nix`（或者自定义的其他文件）里。
+3. 更新器不去改写手写的 `default.nix`，所有变动的数据都输出到旁边的 `source.nix`（或者自定义的其他文件）里。
 
 ## 基本用法
 
-在仓库根目录执行 `nix-repin`，它就会扫描 `pkgs/*/source.ts` 并更新所有包；也可以传包名只更新指定的几个包，比如 `nix-repin ab-download-manager`。
+在仓库根目录执行 `nix-repin`，它会扫描 `pkgs/*/source.ts` 并更新所有包；也可以传包名只更新指定的几个包，比如 `nix-repin ab-download-manager`。
 
-以 `ab-download-manager` 为例，它在 GitHub Release 里分别提供了 `x86_64` 和 `arm64` 的压缩包：
+拿 `ab-download-manager` 举例，它在 GitHub Release 里分别提供了 `x86_64` 和 `arm64` 的压缩包：
 
 ```ts
 // pkgs/ab-download-manager/source.ts
@@ -50,7 +50,7 @@ export default github.release({
 });
 ```
 
-非常短，有效的配置只有 7 行
+非常短，有效的配置只有 7 行。
 
 跑完之后，同目录下会生成 `source.nix`：
 
@@ -86,19 +86,19 @@ in
 }
 ```
 
-然后在 `default.nix` 参数里写上 `source ? callPackage ./source.nix { }`，直接拿 `source.version` 和 `source.src` 用就行了。如果上游版本或 commit 没变，下次运行时会自动跳过，加入 `--force` 参数可以强制重新拉取
+然后在 `default.nix` 参数里写上 `source ? callPackage ./source.nix { }`，直接拿 `source.version` 和 `source.src` 用就行。如果上游版本或 commit 没变，下次运行时会自动跳过，加 `--force` 可以强制重新拉取。
 
-目前内置的来源除了 `github`（支持 release、tag、branch），还有通用 `git`、`npm`、`aur`、`oci` 容器镜像，以及 VS Code 的 `openvsx` 和 `marketplace`。依赖方面则支持 `npm.lock`、`pnpm.lock`、`yarn.lock`、`bun.lock`、`go.lock`、`cargo.lock` 和 Flutter 的 `pubspec.lock`。
+目前内置的来源有 `github`（支持 release、tag、branch）、通用 `git`、`npm`、`aur`、`oci` 容器镜像，以及 VS Code 的 `openvsx` 和 `marketplace`。依赖锁支持 `npm.lock`、`pnpm.lock`、`yarn.lock`、`bun.lock`、`go.lock`、`cargo.lock` 和 Flutter 的 `pubspec.lock`。
 
-其中 `npm.lock` 和 `cargo.lock` 可以直接从拉下来的源码树里读锁文件计算；而像 Go、pnpm、Bun、Yarn 这几个，在脱离 `nixpkgs` 里的具体 builder 时其实不好算哈希。所以 `nix-repin` 干脆把人肉填 `fakeHash` 等报错的操作自动化了：它会在临时目录放好新的 `source.nix`，把对应的哈希字段设成 `pkgs.lib.fakeHash`，然后去 build 你 `default.nix` 里暴露出来的依赖 derivation（比如 `goModules`、`pnpmDeps`），直接从 Nix 的 hash mismatch 报错里把真哈希找出来写回 `source.nix`。这样 `default.nix` 里不管是指定了 `pnpm_11` 还是打了 patch，算出来的哈希都能保证准确性。
+其中 `npm.lock` 和 `cargo.lock` 可以直接读拉下来的锁文件算出来；而 Go、pnpm、Bun、Yarn 这几个脱离了 `nixpkgs` 里的具体 builder 其实不好算哈希。所以 `nix-repin` 干脆把手动填 `fakeHash` 等报错的过程自动化了：先在临时目录写好新的 `source.nix`，把对应的哈希字段设成 `pkgs.lib.fakeHash`，然后去 build `default.nix` 暴露出来的依赖 derivation（比如 `goModules`、`pnpmDeps`），从 Nix 的 hash mismatch 报错里把真哈希抠出来写回 `source.nix`。这样不管 `default.nix` 里是指定了 `pnpm_10` 还是打了 patch，算出来的哈希都不会出错。
 
-## 在 `nur-packages` 里的一些进阶玩法
+## `nur-packages` 里的几个例子
 
-如果只是拉个 GitHub Release，其实用什么工具差别都不大。下面挑几个 `so1ve/nur-packages` 里的真实例子，看看用代码写更新规则能省多少事。
+只是拉个 GitHub Release 的话，用什么工具其实差不多。挑几个 `so1ve/nur-packages` 里的包，看看用代码写更新规则能省多少事。
 
-### `pocket-id` 与 `winboat`：把多个步骤串起来
+### `pocket-id` 与 `winboat`：同时算前后端依赖
 
-不少现代项目是前后端混在一个仓库里的，需要同时算两套依赖哈希。`nix-repin` 提供了 `defineSource`，可以把拉源码和多个算锁文件的步骤按顺序串起来，共用同一份源码目录和最终生成的 `source.nix`。
+现在不少项目把前后端放在同一个仓库里，更新时得同时算两套依赖哈希。`nix-repin` 提供了 `defineSource`，可以把拉源码和多个算锁文件的步骤按顺序串起来，共用同一份源码目录，最后合成一份 `source.nix`。
 
 比如 `pocket-id` 是 Go 后端配 pnpm 前端：
 
@@ -117,25 +117,25 @@ export default defineSource(
 );
 ```
 
-它的前端部分在 `default.nix` 里被拆成了一个嵌套的 `frontend` derivation，所以给 `pnpm.lock` 传了个 `attribute: "frontend.pnpmDeps"` 告诉它去哪找这个 FOD；后面的 `go.lock()` 则默认去找顶层的 `goModules`。跑完之后，`version`、`src`、`pnpmDepsHash` 和 `vendorHash` 会一块写进 `source.nix`。
+它的前端在 `default.nix` 里被拆成了一个子 derivation `frontend`，所以给 `pnpm.lock` 传了 `attribute: "frontend.pnpmDeps"` 告诉它去 build 哪个属性；后面的 `go.lock()` 默认去找顶层的 `goModules`。跑完之后，`version`、`src`、`pnpmDepsHash` 和 `vendorHash` 会一块写进 `source.nix`。
 
-`winboat-unstable` 也是一样：它追的是上游 `main` 分支，用 `bun.lock()` 算前端依赖，再用 `go.lock({ attribute: "guest-server.goModules" })` 去算里面子服务的 Go 依赖，十行代码就搞定了。
+`winboat-unstable` 也一样，它追的是上游 `main` 分支，用 `bun.lock()` 算前端依赖，再用 `go.lock({ attribute: "guest-server.goModules" })` 算子目录里 Go 服务的依赖，十行代码就搞定了。
 
 ### `caddy-naive`：给 `caddy.withPlugins` 算哈希
 
-打包带第三方插件的 Caddy 时会用到 `pkgs.caddy.withPlugins`。比较坑的一点在于，它要求的 `hash` 是把 Caddy 本体和插件放一起做完 Go vendor 之后的哈希，光去 prefetch 插件自己的 GitHub 仓库是没用的。
+打包带第三方插件的 Caddy 会用到 `pkgs.caddy.withPlugins`。比较坑的是，它要求的 `hash` 是把 Caddy 本体和插件放一起做完 Go vendor 之后的哈希，光去 prefetch 插件自己的 GitHub 仓库没用。
 
-既然 `source.ts` 本质上就是个普通脚本，直接调 Nix 把这个哈希问出来就行了：
+既然 `source.ts` 就是个普通脚本，直接调 Nix 把这个哈希问出来就行：
 
-1. 用内置的 `github.latestCommit` 拿到 `klzgrad/forwardproxy` 仓库 `naive` 分支的最新 commit；
-2. 请求 `proxy.golang.org` 把这个 commit 转成 Go 模块要求的伪版本号；
-3. 拼一段调用 `(pkgs.caddy.withPlugins { plugins = [ ... ]; hash = pkgs.lib.fakeHash; }).src` 的 Nix 表达式，用 `nix-repin` 导出的 `runCommand` 跑一次 `nix build --expr`，从报错里抓出真正的 hash，最后把插件字符串和 hash 一起写成 `source.nix`。
+1. 用 `github.latestCommit` 拿到 `klzgrad/forwardproxy` 仓库 `naive` 分支的最新 commit；
+2. 请求 `proxy.golang.org` 把这个 commit 转成 Go 模块的伪版本号；
+3. 拼一段调用 `(pkgs.caddy.withPlugins { plugins = [ ... ]; hash = pkgs.lib.fakeHash; }).src` 的 Nix 表达式，用 `nix-repin` 导出的 `runCommand` 跑一次 `nix build --expr`，从报错里抓出真正的 hash，最后把插件版本号和 hash 一起写进 `source.nix`。
 
-### `rea`：顺着 `package-lock.json` 抓取预编译二进制
+### `rea`：顺着 `package-lock.json` 下载预编译二进制
 
-`rea` 本质上是 npm 上的 `rea-agents` 包，但它依赖了 `frida`。平时用 npm 装的时候，`frida` 会在 install 脚本里联网去 GitHub Release 下载对应架构的预编译二进制；到了断网的 Nix 构建沙盒里，我们只能加 `--ignore-scripts` 跳过脚本，自己提前把这份文件准备好。
+`rea` 打包的是 npm 上的 `rea-agents`，但它依赖了 `frida`。平时用 npm 装的时候，`frida` 会在 install 脚本里联网去 GitHub Release 下载对应架构的预编译二进制；到了断网的 Nix 构建沙盒里，只能加 `--ignore-scripts` 跳过 install 脚本，提前把预编译包准备好。
 
-问题是每次 `rea-agents` 升级，它锁定的 `frida` 版本也可能跟着变。在 `pkgs/rea/source.ts` 里，用两步就能把它串起来：
+问题是每次 `rea-agents` 升级，它锁定的 `frida` 版本也可能跟着变。在 `pkgs/rea/source.ts` 里分两步就能接上：
 
 ```ts
 // pkgs/rea/source.ts
@@ -165,30 +165,30 @@ export default defineSource(
 );
 ```
 
-第一步 `npm.pkg` 会拉取最新的 `rea-agents`，生成 `package.json`、`package-lock.json` 和 `npmDepsHash`。紧接着第二步直接通过 `source.files()` 读取刚刚在内存里生成的 `package-lock.json`，翻出 `frida` 的确切版本号，再用 `fetchurl` 算出 `x86_64` 和 `aarch64` 两个预编译包的哈希，单独存成旁边的 `frida.nix`。构建时 `default.nix` 在 `postConfigure` 阶段把 `${frida.src}` 解压进 `node_modules` 就完事了。
+第一步 `npm.pkg` 拉取最新的 `rea-agents`，生成 `package.json`、`package-lock.json` 和 `npmDepsHash`。第二步直接通过 `source.files()` 读出上一步在内存里生成的 `package-lock.json`，翻出 `frida` 的版本号，再用 `fetchurl` 算出 `x86_64` 和 `aarch64` 两个预编译包的哈希，单独存成旁边的 `frida.nix`。构建时 `default.nix` 在 `postConfigure` 阶段把 `${frida.src}` 解压进 `node_modules` 就行。
 
-### `dsh-plugins`：一个目录批量维护整套插件
+### `dsh-plugins`：按 `catalog.json` 批量更新一组插件
 
 `dsh-plugins` 不是单个包，而是照着一份 `catalog.json` 把好几个来自 GitHub 和 npm 的社区插件批量打成 Nix 包。
 
 它的 `source.ts` 会遍历整个 `catalog.json`：遇到 GitHub 插件就拉最新 commit 并用 `npm.hash` 算依赖哈希；遇到 npm 插件就在临时目录调 `npm.writeLock` 生成独立的 `locks/<包名>/package-lock.json`，顺便检查里面所有依赖是不是都走官方 `registry.npmjs.org` 且带有 `integrity` 校验。
 
-为了防止上游刚发包就撤回，或者不幸撞上供应链投毒，脚本里还顺手算了个 24 小时前的时间戳传给 `before` 参数，只拉取发布满一天的 npm 版本和 Git commit。最后所有插件的元信息统一汇总成一份 `manifest.json`，`default.nix` 读这个 JSON 就能直接用 `lib.mapAttrs` 批量生成所有插件包。
+为了防止上游刚发包就撤回或者撞上供应链投毒，脚本里还算了个 24 小时前的时间戳传给 `before` 参数，只拉发布满一天的 npm 版本和 Git commit。最后所有插件的元信息汇总成一份 `manifest.json`，`default.nix` 读这个 JSON 就能直接用 `lib.mapAttrs` 批量生成所有插件包。
 
 ### 钉钉、向日葵这些没有标准 Release 的闭源包
 
-国内软件和部分闭源工具通常只给个官网下载链接或者私有更新接口，用 TypeScript 应付起来就自由多了：
+国内软件和部分闭源工具通常只给个官网下载链接或者私有更新接口，用 TypeScript 处理起来就很直接：
 
-- **`dingtalk`**：钉钉官网的 Linux 下载入口很奇葩，发 `HEAD` 请求会直接回 `405`，必须发 `GET` 才能拿到跳转后的真实 `.deb` 地址。所以在脚本里 `fetch` 拿到跳转后的 `response.url` 就立刻调 `response.body?.cancel()` 把连接掐断，免得真把这一坨达芬下下来；抠出版本号喂给 `fetchurl` 之后，还会顺手去拉 `dingtalk-wayland-screenshare` 的最新 commit 写成 `screenshare-source.nix`，把 Wayland 屏幕共享补丁也一并更了。
+- **`dingtalk`**：钉钉官网的 Linux 下载入口很奇葩，发 `HEAD` 请求直接回 `405`，必须发 `GET` 才能拿到跳转后的真实 `.deb` 地址。所以在脚本里 `fetch` 拿到跳转后的 `response.url` 就立刻调 `response.body?.cancel()` 把连接掐断，免得真把几百兆的安装包下下来；从 URL 里抠出版本号喂给 `fetchurl` 之后，再顺手拉一下 `dingtalk-wayland-screenshare` 的最新 commit 写成 `screenshare-source.nix`，把 Wayland 屏幕共享补丁也一并更了。
 - **`sunloginclient` / `antigravity-*`**：向日葵和 Antigravity 系列都是各自请求官方的 JSON 或 YAML 更新接口，二十来行代码解析出版本号和 `x86_64`、`arm64` 的下载链接，交给 `fetchurl` 生成 `source.nix`。
 - **`waywallen`**：除了更新主程序的 AppImage，还在脚本里 `new Source(...)` 手动调了一次 `github.release`，顺带把插件的 `.nix` 文件和 `plugins/catalog.json` 一起生成好。
 
-## 配合 GitHub Actions 全自动跑起来
+## 丢给 GitHub Actions 定时跑
 
-光能在本地跑还不够，最后还是得丢给 CI 定时干活。我在 `nur-packages` 的 `flake.nix` 里把 `nix-repin` 暴露成了 `nix run .#update`，然后配了个每天定时跑的 GitHub Actions（`.github/workflows/update.yml`）。
+我在 `nur-packages` 的 `flake.nix` 里把 `nix-repin` 暴露成了 `nix run .#update`，然后配了个每天定时跑的 GitHub Actions（`.github/workflows/update.yml`）。
 
-工作流跑起来之后，会挨个执行 `nix run .#update -- "$package"`。之所以不一把梭哈全部更新完直接 commit，是因为有些包上游发了新版可能会导致编译失败。CI 会把每个有文件变动的包单独导出成 `.patch` 文件，丢给后面的矩阵任务，在 `ubuntu-26.04`（`x86_64-linux`）和 `ubuntu-26.04-arm`（`aarch64-linux`）两个 runner 上分别实际 `nix build` 一遍，同时用 [oranc](https://github.com/linyinfeng/oranc) 把编译产物推到 GHCR 做二进制缓存（绑在 `cache.so1ve.dev` 上）。
+工作流跑起来之后，会挨个执行 `nix run .#update -- "$package"`。之所以不一口气全部更新完直接 commit，是因为有些包上游发了新版可能会编译失败。CI 会把每个有文件变动的包单独导出成 `.patch` 文件，丢给后面的矩阵任务，在 `ubuntu-24.04`（`x86_64-linux`）和 `ubuntu-24.04-arm`（`aarch64-linux`）两个 runner 上分别实际 `nix build` 一遍，同时把编译产物推到二进制缓存（绑在 `cache.so1ve.dev` 上）。
 
-最后一步只挑在两个架构上都编译通过的包，把它们的 patch 应用到仓库并 push 回 `main`。这样就算某天某个上游抽风或者改坏了构建，也只会跳过那一个包，不会把其他正常更新的包一起卡死。
+最后一步只挑在两个架构上都编译通过的包，把它们的 patch 应用到仓库并 push 回 `main`。这样就算哪天某个上游改坏了构建，也只会跳过那一个包，不会把其他正常更新的包一起卡死。
 
-目前仓库里三十多个包基本都靠这套流程自己往前滚了，平时除了偶尔修修上游大版本改构建方式引起的报错，基本不用怎么操心。如果你也在维护自己的 NUR 或者 Flake 软件源，受够了手写一堆更新脚本，不妨试试 [nix-repin](https://github.com/so1ve/nix-repin)（x
+现在仓库里三十多个包基本都靠这套流程自己更新了，平时除了偶尔修修上游大版本改构建方式引起的报错，基本不用管。如果你也在维护自己的 NUR 或者 Flake 软件源，不想再手写一堆 bash 更新脚本，可以试试 [nix-repin](https://github.com/so1ve/nix-repin)（x
