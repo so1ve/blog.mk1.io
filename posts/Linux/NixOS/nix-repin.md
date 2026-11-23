@@ -1,5 +1,9 @@
 # nix-repin：用 TypeScript 给 Nix 包写自动更新
 
+再也不想手填 `lib.fakeHash` 了
+
+## 前言
+
 前段时间把自己的 NUR 仓库 [so1ve/nur-packages](https://github.com/so1ve/nur-packages) 整理了一遍。里面的包越塞越多，原来的自动更新方案用着实在难受，干脆自己造了个新轮子：[nix-repin](https://github.com/so1ve/nix-repin)。
 
 用法很简单：给每个包写一个 `source.ts`，运行 `nix-repin` 就会自动生成 `source.nix` 和对应的 lock 文件，供 `default.nix` 直接调用。
