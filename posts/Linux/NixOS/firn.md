@@ -31,7 +31,7 @@ D1 里就三张表：`blobs` 记 GHCR 上的包名和 digest，`store_paths` 记
 客户端拉缓存的时候：
 
 - 请求 `/<storeHash>.narinfo`：Worker 直接查 D1 拼出文本返回，顺便用 `waitUntil` 异步更新一下 `last_accessed_at`（为了省 D1 写入额度做了 24 小时节流）。全程不碰 GHCR，在不在缓存里查一下表就知道了。
-- 请求 `/nar/<blobDigest>.nar.zst`：Worker 从 D1 查出这个 blob 放在哪个 GHCR package 里，向 GHCR 换个下载链接，直接给客户端回 `302 Redirect`。大文件流量全走 GitHub CDN，不占 Worker 的内存和运行时间。
+- 请求 `/nar/<blobDigest>.nar.zst`：Worker 从 D1 查出这个 blob 放在哪个 GHCR package 里，向 GHCR 换个下载链接，直接给客户端回 `302 Redirect`。大文件流量直接走 GitHub CDN，Worker 本身的开销可以说非常轻量。
 
 ## 推送与免 Secret 的 GitHub Actions
 
@@ -56,13 +56,13 @@ steps:
 
 推送时客户端和 Worker 会交互两次：
 
-1. 先调 `/api/v1/uploads/plan`，把本地算出来的候选闭包（默认跳过带 `cache.nixos.org-1:` 官方签名的路径）发过去。Worker 校验 OIDC JWT 里的数字 `repository_owner_id`、仓库名和分支，去 D1 查出还没缓存的 store path，把缺失列表和目标 GHCR 仓库名返回给客户端。
+1. 先请求 `/api/v1/uploads/plan`，把本地算出来的候选闭包（默认跳过带 `cache.nixos.org-1:` 官方签名的路径）发过去。Worker 校验 OIDC JWT 里的数字 `repository_owner_id`、仓库名和分支，去 D1 查出还没缓存的 store path，把缺失列表和目标 GHCR 仓库名返回给客户端。
 2. 客户端只对缺失的 path 跑 `nix-store --dump`，流式接上 Node.js 内置的 `zlib.createZstdCompress` 压成 `.nar.zst`，边压边算好 NAR 和压缩文件的两个 SHA-256，然后直接推到 GHCR（作为单层 OCI artifact，tag 为 `nar-<blobDigest前32位>`）。
-3. 传完调 `/api/v1/uploads/commit` 把元数据报给 Worker。Worker 不会直接信客户端报上来的数据，而是会自己去 GHCR 拉一次对应的 OCI manifest 并 `HEAD` 一下 blob，核对 digest 和文件大小确实一致后，才用私钥签名并写进 D1。
+3. 传完调 `/api/v1/uploads/commit` 把元数据报给 Worker。为了确保数据可信，Worker 会自己去 GHCR 拉一次对应的 OCI manifest 并 `HEAD` 一下 blob，核对 digest 和文件大小确实一致后，才用私钥签名并写进 D1。
 
 这里还卡了一下 Cloudflare Workers 的限制：免费版单次请求最多只能发 50 个 subrequest。每次 commit 校验要先换 1 次 token，每个 path 要向 GHCR 发 2 个请求（查 manifest + `HEAD` blob），所以客户端会自动按 15 个 path 一批分块提交（1 + 15 × 2 = 31 < 50）。
 
-Action 本身直接跑在 `node24` 上：`main` 阶段从 `/api/v1/public-keys` 拉取公钥写进 `nix.conf`，再记下 `/nix/store` 现有的目录列表；等 job 跑完进 `post` 阶段，对比出新构建的 path 推上去。
+Action 的执行流程则是：`main` 阶段从 `/api/v1/public-keys` 拉取公钥写进 `nix.conf`，再记下 `/nix/store` 现有的目录列表；等 job 跑完进 `post` 阶段，对比出新构建的 path 推上去。
 
 如果在自己电脑上手动推包，我也用 [Clerc](https://github.com/clercjs/clerc) 写了个 `firn` CLI。本地没有 OIDC，只要配个静态的 `FIRN_TOKEN`，Worker 在 Plan 阶段会用配好的 GitHub App 签发一个临时的、只对目标 GHCR package 生效的上传 token 返回给 CLI，本地也不用存高权限的 GitHub PAT：
 
@@ -117,4 +117,4 @@ firn gc --dry-run
 
 另外整个项目从 Worker、CLI 到 Action 都没有打包构建步骤。Worker 直接用 Wrangler 部署 TS 源码；CLI 和 Action 直接靠 Node.js 24 原生执行 `.ts` 文件的能力跑起来，Zstd 压缩用的也是 Node 内置的 `node:zlib`，所以生产依赖只有 `hono` 和 `clerc` 两个包。Worker 里为了用 Web Crypto 签 GitHub App 的 JWT，直接手写了二十几行 ASN.1 DER 编码把 GitHub 给的 PKCS#1 RSA 私钥包成 PKCS#8 喂给 `crypto.subtle.importKey`，连第三方加密库都省了。
 
-现在 [`cache.so1ve.dev`](https://cache.so1ve.dev) 已经切到 Firn 上了，代码在 [`so1ve/firn`](https://github.com/so1ve/firn)（x
+现在 [`cache.so1ve.dev`](https://cache.so1ve.dev) 已经切到 Firn 上了，代码在 [`so1ve/firn`](https://github.com/so1ve/firn)。欢迎品鉴！
