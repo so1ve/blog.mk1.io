@@ -18,6 +18,10 @@ ToS violation，很神奇吧
 
 说白了就是服务端不能完全无状态，至少得有个数据库存一下 `.narinfo` 和引用关系。正好 Cloudflare D1 的免费额度拿来存几万条文本元数据绰绰有余，这两天就干脆重写了一套：[Firn](https://github.com/so1ve/firn)。
 
+> [!WARNING]
+>
+> 请注意，和 oranc 类似，Firn 对于 GHCR 的使用可能违反 GitHub 的 ToS，使用后果自负
+
 ## 思路
 
 做法很简单：把 `.narinfo` 挪到 D1，`.nar.zst` 大文件继续丢 GHCR。
