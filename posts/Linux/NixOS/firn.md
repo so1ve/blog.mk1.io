@@ -1,14 +1,10 @@
----
-published: 2026-11-23
----
-
 # Firn：用 GHCR 和 Cloudflare D1 搭个 Nix 二进制缓存
 
 ToS，很神奇吧
 
 ## 前言
 
-上一篇写 [nix-repin](/posts/Linux/nix-repin.html) 的时候提到了 `cache.so1ve.dev`。之前这个缓存跑的是 [oranc](https://github.com/linyinfeng/oranc)，把编译产物塞进 GHCR（GitHub Container Registry）的镜像层里，前面再套个 Cloudflare Worker 转成 Nix 二进制缓存的接口。
+上一篇写 [nix-repin](/posts/Linux/NixOS/nix-repin.html) 的时候提到了 `cache.so1ve.dev`。之前这个缓存跑的是 [oranc](https://github.com/linyinfeng/oranc)，把编译产物塞进 GHCR（GitHub Container Registry）的镜像层里，前面再套个 Cloudflare Worker 转成 Nix 二进制缓存的接口。
 
 拿公开仓库的 GHCR 存 Nix 包是真的香，不限容量，下载还走 GitHub 的 CDN，相比 Cachix 免费版那 5GB 额度或者自己掏钱买 R2 划算太多了。
 

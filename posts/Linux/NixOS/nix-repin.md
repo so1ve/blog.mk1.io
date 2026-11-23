@@ -1,7 +1,3 @@
----
-published: 2026-11-19
----
-
 # nix-repin：用 TypeScript 给 Nix 包写自动更新
 
 前段时间把自己的 NUR 仓库 [so1ve/nur-packages](https://github.com/so1ve/nur-packages) 整理了一遍。里面的包越塞越多，原来的自动更新方案用着实在难受，干脆自己造了个新轮子：[nix-repin](https://github.com/so1ve/nix-repin)。
