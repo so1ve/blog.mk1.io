@@ -14,7 +14,7 @@ ToS violation，很神奇吧
 
 再就是没法做安全的垃圾回收（GC）。Nix 的 store path 之间是有引用关系的，如果只是按时间把旧的 GHCR package version 删掉，很可能某个常用的上层包还在，但它依赖的某个底层库因为很久没重新编译过，被当成过期版本删了，整个缓存闭包就废了。
 
-另外每次开新仓库配 GitHub Actions 都得往 Secrets 里塞 `NIX_SIGNING_KEY` 和写 GHCR 用的 PAT。目前我的 GitHub 账号 `so1ve` 和`bitoolkit` 组织都有项目需要上传到我的二进制缓存，管起来很烦。而且跑 PR 的时候也不敢开缓存推送，直接往主缓存写吧，还没合入的分支万一改坏了就会污染主缓存；不写吧，同一个 PR 跑好几个 job 或者连续推 commit 又没法复用前面编好的东西。
+另外每次开新仓库配 GitHub Actions 都得往 Secrets 里塞 `NIX_SIGNING_KEY` 和写 GHCR 用的 PAT。目前我的 GitHub 账号 `so1ve` 和 `bitoolkit` 组织都有项目需要上传到我的二进制缓存，管起来很烦。而且跑 PR 的时候也不敢开缓存推送，直接往主缓存写吧，还没合入的分支万一改坏了就会污染主缓存；不写吧，同一个 PR 跑好几个 job 或者连续推 commit 又没法复用前面编好的东西。
 
 说白了就是服务端不能完全无状态，至少得有个数据库存一下 `.narinfo` 和引用关系。正好 Cloudflare D1 的免费额度拿来存几万条文本元数据绰绰有余，这两天就干脆重写了一套：[Firn](https://github.com/so1ve/firn)。
 
